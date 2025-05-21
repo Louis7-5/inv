@@ -1,5 +1,6 @@
 import mysql.connector
 from mysql.connector import Error
+from db_connection import get_connection
 
 class Item:
     def __init__(self, item_id, name, quantity, price, category=None):
@@ -71,6 +72,18 @@ class Inventory:
 
     def get_inventory_value(self):
         return sum(item.quantity * item.price for item in self.items.values())
+
+def fetch_items():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM items")
+        items = cursor.fetchall()
+        conn.close()
+        return items
+    except Exception as e:
+        print("Database Error:", e)
+        return []
 
 def main():
     inventory = Inventory()
