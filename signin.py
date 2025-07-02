@@ -18,7 +18,7 @@ def check_login(username, password):
 
 def on_login():
     username = entry_username.get()
-    password = entry_password.get()
+    password = entry_password.get() 
     if check_login(username, password):
         root.destroy()
         subprocess.Popen([sys.executable, "dashboard.py"])
