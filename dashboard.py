@@ -42,6 +42,7 @@ class DashboardApp(customtkinter.CTk):
 
         self.refresh_items()
 
+    # Refresh items from the database and display in the table
     def refresh_items(self):
         self.items_table.configure(state="normal")
         self.items_table.delete("1.0", "end")
@@ -54,6 +55,7 @@ class DashboardApp(customtkinter.CTk):
             self.items_table.insert("end", f"{row[0]:<10}{row[1]:<20}{row[2]:<10}{row[3]:<10.2f}\n")
         self.items_table.configure(state="disabled")
 
+    # add item window
     def open_add_item_window(self):
         win = customtkinter.CTkToplevel(self)
         win.title("Add Item")
@@ -95,6 +97,7 @@ class DashboardApp(customtkinter.CTk):
 
         customtkinter.CTkButton(win, text="Add", command=add_item).pack(pady=20)
 
+    # remove item window
     def open_remove_item_window(self):
         win = customtkinter.CTkToplevel(self)
         win.title("Remove Item")
