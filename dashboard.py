@@ -1,5 +1,6 @@
 import customtkinter
 from db_connection import get_connection
+import tkinter.ttk as ttk
 
 class MetricsFrame(customtkinter.CTkFrame):
     def __init__(self, parent):
@@ -115,10 +116,91 @@ class InventoryFrame(customtkinter.CTkFrame):
         customtkinter.CTkButton(win, text="Remove", command=remove_item).pack(pady=20)
 
 class SuppliersFrame(customtkinter.CTkFrame):
-    def __init__(self, parent):
+    def __init__(self, parent, conn):
         super().__init__(parent)
+        self.conn = conn
+
         customtkinter.CTkLabel(self, text="Suppliers Page", font=("Consolas", 16)).pack(pady=20)
-        # Add suppliers widgets here
+
+        # Table for suppliers using ttk.Treeview
+        columns = ("id", "name", "address", "contacts", "date", "supplies")
+        self.tree = ttk.Treeview(self, columns=columns, show="headings", height=12)
+        for col in columns:
+            self.tree.heading(col, text=col.replace("_", " ").title())
+            self.tree.column(col, width=100, anchor="center")
+        self.tree.pack(padx=20, pady=10, fill="both", expand=True)
+
+        btn_frame = customtkinter.CTkFrame(self)
+        btn_frame.pack(pady=10)
+
+        customtkinter.CTkButton(btn_frame, text="Refresh", command=self.refresh_suppliers).pack(side="left", padx=5)
+        customtkinter.CTkButton(btn_frame, text="Add Supplier", command=self.open_add_supplier_window).pack(side="left", padx=5)
+        customtkinter.CTkButton(btn_frame, text="Remove Supplier", command=self.open_remove_supplier_window).pack(side="left", padx=5)
+
+        self.refresh_suppliers()
+
+    def refresh_suppliers(self):
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, name, address, contacts, date, supplies FROM suppliers")
+        rows = cursor.fetchall()
+        for row in rows:
+            self.tree.insert("", "end", values=row)
+
+    def open_add_supplier_window(self):
+        win = customtkinter.CTkToplevel(self)
+        win.title("Add Supplier")
+        win.geometry("350x400")
+
+        labels = ["Supplier ID:", "Name:", "Address:", "Contacts:", "Date (YYYY-MM-DD):", "Supplies:"]
+        entries = []
+        for label in labels:
+            customtkinter.CTkLabel(win, text=label).pack(pady=5)
+            entry = customtkinter.CTkEntry(win)
+            entry.pack(pady=5)
+            entries.append(entry)
+
+        def add_supplier():
+            try:
+                id = entries[0].get()
+                name = entries[1].get()
+                address = entries[2].get()
+                contacts = entries[3].get()
+                date = entries[4].get()
+                supplies = entries[5].get()
+            except Exception:
+                return
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO suppliers (id, name, address, contacts, date, supplies)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE name=%s, address=%s, contacts=%s, date=%s, supplies=%s
+            """, (id, name, address, contacts, date, supplies, name, address, contacts, date, supplies))
+            self.conn.commit()
+            win.destroy()
+            self.refresh_suppliers()
+
+        customtkinter.CTkButton(win, text="Add", command=add_supplier).pack(pady=20)
+
+    def open_remove_supplier_window(self):
+        win = customtkinter.CTkToplevel(self)
+        win.title("Remove Supplier")
+        win.geometry("300x150")
+
+        customtkinter.CTkLabel(win, text="Supplier ID:").pack(pady=5)
+        id_entry = customtkinter.CTkEntry(win)
+        id_entry.pack(pady=5)
+
+        def remove_supplier():
+            id = id_entry.get()
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM suppliers WHERE id = %s", (id,))
+            self.conn.commit()
+            win.destroy()
+            self.refresh_suppliers()
+
+        customtkinter.CTkButton(win, text="Remove", command=remove_supplier).pack(pady=20)
 
 class DashboardApp(customtkinter.CTk):
     def __init__(self):
@@ -158,7 +240,7 @@ class DashboardApp(customtkinter.CTk):
         self.frames = {}
         self.frames["metrics"] = MetricsFrame(self.main_frame)
         self.frames["inventory"] = InventoryFrame(self.main_frame, self.conn, self.show_frame)
-        self.frames["suppliers"] = SuppliersFrame(self.main_frame)
+        self.frames["suppliers"] = SuppliersFrame(self.main_frame, self.conn)
 
         for frame in self.frames.values():
             frame.grid(row=0, column=0, sticky="nsew")
