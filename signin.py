@@ -21,7 +21,7 @@ def on_login():
     password = entry_password.get() 
     if check_login(username, password):
         root.destroy()
-        subprocess.Popen([sys.executable, "dashboard.py"])
+        subprocess.Popen([sys.executable, "main.py"])  # Changed from dashboard.py to main.py
     else:
         messagebox.showerror("Login Failed", "Invalid username or password.")
 
